@@ -3,18 +3,33 @@
   font-family: Arial, sans-serif;
 }
 
-body {
+html, body {
   margin: 0;
+  min-height: 100%;
   background: #ffeef1;
   color: #333;
 }
 
+body {
+  display: flex;
+  justify-content: center;
+}
+
+/* 모바일 웹 앱 화면 */
 .container {
-  width: 390px;
+  width: 100%;
+  max-width: 430px;
   min-height: 100vh;
-  margin: 0 auto;
   background: #fff;
-  padding: 24px;
+  padding: 28px 20px;
+}
+
+/* 로그인 화면 중앙 정렬용 */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
 }
 
 h1, h2 {
@@ -79,4 +94,22 @@ input {
   border-radius: 14px;
   background: #fff5f7;
   margin-bottom: 12px;
+}
+
+/* 작은 휴대폰 대응 */
+@media (max-width: 480px) {
+  .container {
+    max-width: none;
+    width: 100%;
+    min-height: 100dvh;
+    padding: 32px 20px;
+  }
+
+  h1 {
+    font-size: 26px;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
 }
