@@ -93,20 +93,3 @@ input {
   margin-bottom: 12px;
 }
 
-/* 작은 휴대폰 대응 */
-@media (max-width: 480px) {
-  .container {
-    max-width: none;
-    width: 100%;
-    min-height: 100dvh;
-    padding: 32px 20px;
-  }
-
-  h1 {
-    font-size: 26px;
-  }
-
-  h2 {
-    font-size: 22px;
-  }
-}
