@@ -18,10 +18,10 @@ body {
 /* 모바일 웹 앱 화면 */
 .container {
   width: 100%;
-  max-width: 430px;
+  max-width: 500px;
   min-height: 100vh;
   background: #fff;
-  padding: 28px 20px;
+  padding: 20px 16px 40px;
 }
 
 .login-container {
@@ -54,8 +54,8 @@ button.secondary {
 .card {
   background: #fff5f7;
   border-radius: 16px;
-  padding: 16px;
-  margin: 16px 0;
+  padding: 14px;
+  margin: 12px 0;
   border: 1px solid #ffd0d8;
 }
 
