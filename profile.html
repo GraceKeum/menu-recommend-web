@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>프로필 설정</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body onload="initProfilePage()">
+  <div class="container">
+    <h2>프로필 설정</h2>
+
+    <label>이름</label>
+    <input id="name" placeholder="이름을 입력하세요">
+
+    <div class="card">
+      <h3>못 먹는 음식</h3>
+      <div id="cannotEat" class="option-group"></div>
+    </div>
+
+    <div class="card">
+      <h3>안 먹는 음식</h3>
+      <div id="dislike" class="option-group"></div>
+    </div>
+
+    <div class="card">
+      <h3>선호 음식 종류</h3>
+      <p>최대 3개 선택</p>
+      <div id="preference" class="option-group"></div>
+    </div>
+
+    <div class="card">
+      <h3>매운맛 선호도</h3>
+      <input id="spicy" type="range" min="1" max="5" value="3">
+      <p>1단계: 거의 못 먹음 / 5단계: 아주 매운맛 가능</p>
+    </div>
+
+    <button onclick="saveProfile()">저장하기</button>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    function initProfilePage() {
+      createOptions("cannotEat", foodOptions.cannotEat);
+      createOptions("dislike", foodOptions.dislike);
+      createOptions("preference", foodOptions.preference, 3);
+    }
+  </script>
+</body>
+</html>

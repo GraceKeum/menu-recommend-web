@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>메인 페이지</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>모임 뭐먹지?</h2>
+
+    <div class="card">
+      <h3>내 프로필</h3>
+      <p>음식 취향을 수정할 수 있어요.</p>
+      <button class="secondary" onclick="go('profile.html')">프로필 수정하기</button>
+    </div>
+
+    <div class="card">
+      <h3>모임방 만들기</h3>
+      <p>새로운 모임을 만들고 메뉴를 추천받아요.</p>
+      <button onclick="go('create.html')">모임방 만들기</button>
+    </div>
+
+    <div class="card">
+      <h3>모임방 참여하기</h3>
+      <p>초대코드로 기존 모임에 참여해요.</p>
+      <button onclick="go('join.html')">모임방 참여하기</button>
+    </div>
+
+    <button class="secondary" onclick="logout()">로그아웃</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
