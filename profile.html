@@ -6,7 +6,7 @@
   <title>프로필 설정</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body onload="initProfilePage()">
+<body>
   <div class="container">
     <h2>프로필 설정</h2>
 
@@ -38,13 +38,16 @@
     <button onclick="saveProfile()">저장하기</button>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
+
   <script>
-    function initProfilePage() {
-      createOptions("cannotEat", foodOptions.cannotEat);
-      createOptions("dislike", foodOptions.dislike);
-      createOptions("preference", foodOptions.preference, 3);
-    }
+    window.onload = () => {
+      if (typeof window.createOptions === 'function' && window.foodOptions) {
+        createOptions("cannotEat", window.foodOptions.cannotEat);
+        createOptions("dislike", window.foodOptions.dislike);
+        createOptions("preference", window.foodOptions.preference, 3);
+      }
+    };
   </script>
 </body>
 </html>
