@@ -41,11 +41,57 @@
   <script type="module" src="script.js"></script>
 
   <script>
+    // [추가] 로컬스토리지에서 불러온 기존 선택 항목들을 화면(.selected 클래스 추가)에 다시 칠해주는 함수
+    function renderSavedOptions(containerId, savedDataArray) {
+      if (!savedDataArray || !savedDataArray.length) return;
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      // 생성된 모든 옵션(.option)을 돌면서 기존에 저장했던 텍스트와 일치하면 selected 클래스를 붙여줍니다.
+      const options = container.querySelectorAll('.option');
+      options.forEach(opt => {
+        if (savedDataArray.includes(opt.innerText)) {
+          opt.classList.add('selected');
+        }
+      });
+    }
+
     window.onload = () => {
+      // 스크립트(script.js)가 로드 완료되어 전역 변수들이 준비되었는지 확인 후 UI 배치 시작
       if (typeof window.createOptions === 'function' && window.foodOptions) {
+        setupUI();
+      } else {
+        // 모듈 비동기 로딩 속도 대응을 위한 0.1초 단위 재시도 타이머
+        const retry = setInterval(() => {
+          if (typeof window.createOptions === 'function' && window.foodOptions) {
+            setupUI();
+            clearInterval(retry);
+          }
+        }, 100);
+      }
+
+      function setupUI() {
+        // 1. 선택 상자들 동적 생성 (기존 로직 유지)
         createOptions("cannotEat", window.foodOptions.cannotEat);
         createOptions("dislike", window.foodOptions.dislike);
         createOptions("preference", window.foodOptions.preference, 3);
+        
+        // 2. [추가] 생성 직후 로컬 스토리지에 백업된 데이터가 있다면 복구해서 화면에 입히기
+        const savedProfile = localStorage.getItem("userProfile");
+        if (savedProfile) {
+          const data = JSON.parse(savedProfile);
+          
+          // 기존 이름 복구
+          if (data.name) document.getElementById("name").value = data.name;
+          
+          // 기존 매운맛 단계 복구
+          if (data.spicy) document.getElementById("spicy").value = data.spicy;
+          
+          // 기존에 선택했던 음식 태그들 시각적으로 복구 (.selected 반영)
+          renderSavedOptions("cannotEat", data.cannotEat);
+          renderSavedOptions("dislike", data.dislike);
+          renderSavedOptions("preference", data.preference);
+        }
       }
     };
   </script>

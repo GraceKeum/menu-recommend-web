@@ -10,13 +10,63 @@
   <div class="container">
     <h2>모임방 만들기</h2>
 
-    <label>모임방 이름</label>
+    <label for="roomName">모임방 이름</label>
     <input id="roomName" placeholder="예: 주말 맛집 탐방">
 
-    <button onclick="createRoom()">모임방 만들기</button>
-    <button class="secondary" onclick="go('main.html')">뒤로가기</button>
+    <button id="btnCreateRoom">모임방 만들기</button>
+    <button class="secondary" id="btnBack">뒤로가기</button>
+
+    <div id="codeArea" style="margin-top: 20px; font-weight: bold; color: #4A90E2; text-align: center;"></div>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
+
+  <script type="module">
+    const roomNameInput = document.getElementById('roomName');
+    const btnCreateRoom = document.getElementById('btnCreateRoom');
+    const btnBack = document.getElementById('btnBack'); // 추가
+    const codeArea = document.getElementById('codeArea');
+
+    // 1. 모임방 만들기 버튼 클릭 이벤트
+    if (btnCreateRoom) {
+      btnCreateRoom.addEventListener('click', async () => {
+        const title = roomNameInput.value.trim();
+        
+        if (!title) {
+          alert('모임방 이름을 입력해 주세요!');
+          return;
+        }
+
+        if (typeof window.createRoom === 'function') {
+          const inviteCode = await window.createRoom(title);
+
+          if (inviteCode) {
+            alert(`🎉 모임방이 생성되었습니다!\n초대코드: ${inviteCode}`);
+            
+            if (codeArea) {
+              codeArea.innerHTML = `
+                <p style="margin-bottom: 10px; color: #555;">생성된 초대코드</p>
+                <h1 style="font-size: 32px; letter-spacing: 2px; margin-bottom: 20px; color: #4A90E2;">${inviteCode}</h1>
+                <button onclick="go('room.html')" style="width: 100%;">대기방으로 입장하기</button>
+              `;
+            }
+          }
+        } else {
+          alert('시스템을 불러오는 중입니다. 1~2초 후 다시 시도해주세요.');
+        }
+      });
+    }
+
+    // 2. [추가] 뒤로가기 버튼 클릭 이벤트 안전하게 처리
+    if (btnBack) {
+      btnBack.addEventListener('click', () => {
+        if (typeof window.go === 'function') {
+          window.go('main.html');
+        } else {
+          window.location.href = 'main.html';
+        }
+      });
+    }
+  </script>
 </body>
 </html>
