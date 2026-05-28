@@ -1,0 +1,152 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: #ffeef1;
+  color: #333;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+}
+
+/* 모바일 웹 앱 화면 */
+.container {
+  width: 100%;
+  max-width: 500px;
+  min-height: 100vh;
+  background: #fff;
+  padding: 20px 16px 40px;
+}
+
+.login-container {
+  text-align: center;
+  padding-top: 120px;
+}
+
+h1, h2 {
+  color: #ff5a75;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #ff5a75;
+  color: white;
+  font-size: 16px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: white;
+  color: #ff5a75;
+  border: 1px solid #ff5a75;
+}
+
+.card {
+  background: #fff5f7;
+  border-radius: 16px;
+  padding: 14px;
+  margin: 12px 0;
+  border: 1px solid #ffd0d8;
+}
+
+.option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option {
+  padding: 10px 14px;
+  border: 1px solid #ffc0cb;
+  border-radius: 20px;
+  cursor: pointer;
+  background: white;
+}
+
+.option.selected {
+  background: #ff5a75;
+  color: white;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.menu-rank {
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff5f7;
+  margin-bottom: 12px;
+}
+
+.logo-img {
+    width: 120px;    
+    height: auto;       
+    display: block;     
+    margin: 0 auto 20px;
+
+    mix-blend-mode: multiply;
+}
+
+.basic-info-card {
+  display: flex;
+  gap: 12px;
+  background: #fff5f7;
+  align-items: center;
+}
+
+.input-group {
+  flex: 1;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  color: #ff5a75;
+  margin-bottom: 4px;
+}
+
+#age, #gender {
+  width: 100%;
+  height: 42px; /* 👈 높이를 딱 고정해서 두 상자의 크기를 물리적으로 통일합니다 */
+  padding: 0 12px;
+  border: 1px solid #ffd0d8;
+  border-radius: 10px;
+  background: white;
+  color: #333;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box; /* 👈 테두리와 패딩이 높이에 영향을 주지 않도록 가둡니다 */
+}
+
+
+#gender {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 12px center;
+}
+
+#age:focus, #gender:focus {
+  border-color: #ff5a75;
+}
+
+#gender {
+  color: #757575;
+}

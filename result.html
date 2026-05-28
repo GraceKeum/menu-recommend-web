@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>추천 결과</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>추천 메뉴 TOP 3</h2>
+
+    <div id="resultBox"></div>
+
+    <button onclick="recommendMenus()">다시 추천</button>
+    <button class="secondary" onclick="go('main.html')">메인으로</button>
+  </div>
+
+  <script type="module" src="script.js"></script>
+
+  <script type="module">
+    if (window.showResult) {
+      window.showResult();
+    }
+  </script>
+</body>
+</html>

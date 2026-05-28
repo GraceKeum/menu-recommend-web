@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>모임방</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body onload="showRoom()">
+  <div class="container">
+    <h2 id="roomTitle">모임방</h2>
+
+    <div class="card">
+      <h3>초대코드</h3>
+      <p id="invite"></p>
+    </div>
+
+    <div class="card">
+      <h3>참여자 목록</h3>
+      <ul id="memberList"></ul>
+    </div>
+
+    <button onclick="recommendMenus()">메뉴 추천 받기</button>
+    <button class="secondary" onclick="go('main.html')">메인으로</button>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
