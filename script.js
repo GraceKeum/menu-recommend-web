@@ -1,7 +1,7 @@
-// 1. Firebase 모듈 가져오기
+// 1. Firebase 모듈 가져오기 (onSnapshot과 arrayRemove를 상단에 통합했습니다)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // 2. Firebase 설정값
 const firebaseConfig = {
@@ -51,15 +51,12 @@ async function googleLogin() {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
     
-    // 유저가 기존에 프로필을 짰는지 확인
     const userDoc = await getDoc(doc(db, "users", user.uid));
     
     if (userDoc.exists()) {
-      // 이미 프로필이 있으면 로컬에 저장하고 메인으로
       localStorage.setItem("userProfile", JSON.stringify(userDoc.data()));
       go("main.html");
     } else {
-      // 프로필이 처음이면 설정 페이지로 이동
       go("profile.html");
     }
   } catch (error) {
@@ -96,7 +93,7 @@ function getSelected(id) {
   return [...document.querySelectorAll(`#${id} .selected`)].map(el => el.innerText);
 }
 
-// 6. Firestore 및 로컬에 프로필 저장
+// 6. Firestore 및 로컬에 프로필 저장 (기존 로직 그대로 유지)
 async function saveProfile() {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -114,9 +111,8 @@ async function saveProfile() {
   };
 
   try {
-    // Firestore의 'users' 컬렉션에 내 uid 이름으로 저장
     await setDoc(doc(db, "users", currentUser.uid), profile);
-    localStorage.setItem("userProfile", JSON.stringify(profile)); // 연산용 로컬 백업
+    localStorage.setItem("userProfile", JSON.stringify(profile));
     alert("프로필이 클라우드에 저장되었습니다.");
     go("main.html");
   } catch (e) {
@@ -125,7 +121,44 @@ async function saveProfile() {
   }
 }
 
-// [수정 완료] 7. 모임방 만들기 (화면에 코드 유지를 위해 자동이동을 제거하고 코드를 return)
+let tempProfile = {
+  gender: "",
+  ageRange: "",
+  cannotEat: [],
+  dislike: [],
+  preference: [],
+  spicy: 3
+};
+
+function saveStep1_Gender(gender) { tempProfile.gender = gender; }
+function saveStep2_Age(age) { tempProfile.ageRange = age; }
+
+async function saveFinalProfile() {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return alert("로그인이 필요합니다.");
+
+  const finalProfile = {
+    uid: currentUser.uid,
+    name: document.getElementById("name")?.value || currentUser.displayName || "사용자",
+    gender: tempProfile.gender,
+    ageRange: tempProfile.ageRange,
+    cannotEat: getSelected("cannotEat"),
+    dislike: getSelected("dislike"),
+    preference: getSelected("preference"),
+    spicy: Number(document.getElementById("spicy")?.value || 3)
+  };
+
+  try {
+    await setDoc(doc(db, "users", currentUser.uid), finalProfile);
+    localStorage.setItem("userProfile", JSON.stringify(finalProfile));
+    alert("프로필 설정이 모두 완료되었습니다! 🎉");
+    go("main.html");
+  } catch (e) {
+    console.error("최종 프로필 저장 실패:", e);
+  }
+}
+
+// 7. 모임방 만들기
 async function createRoom() {
   const currentUser = auth.currentUser;
   const userProfile = JSON.parse(localStorage.getItem("userProfile"));
@@ -142,13 +175,13 @@ async function createRoom() {
     roomName,
     inviteCode,
     creator: currentUser.uid,
-    members: [userProfile] // 방장 프로필을 먼저 멤버에 포함
+    members: [userProfile]
   };
 
   try {
     await addDoc(collection(db, "rooms"), roomData);
-    localStorage.setItem("currentRoomCode", inviteCode); // 대기방 입장 시 식별용
-    return inviteCode; // 중요: HTML 내부 스크립트로 초대코드를 반환하여 화면에 띄웁니다.
+    localStorage.setItem("currentRoomCode", inviteCode);
+    return inviteCode;
   } catch (e) {
     console.error("방 생성 실패:", e);
     alert("방 생성에 실패했습니다.");
@@ -161,7 +194,7 @@ async function joinRoom() {
   const inviteCodeInput = document.getElementById("inviteCode");
   if (!inviteCodeInput) return;
 
-  const code = inviteCodeInput.value.toUpperCase();
+  const code = inviteCodeInput.value.toUpperCase().trim();
   const userProfile = JSON.parse(localStorage.getItem("userProfile"));
   if (!userProfile) return alert("프로필이 필요합니다.");
 
@@ -178,7 +211,6 @@ async function joinRoom() {
     const roomRef = doc(db, "rooms", roomDoc.id);
     const roomData = roomDoc.data();
 
-    // 중복 참여 방지 로직 추가
     const isAlreadyMember = roomData.members.some(member => member.uid === userProfile.uid);
     if (!isAlreadyMember) {
       await updateDoc(roomRef, {
@@ -194,20 +226,19 @@ async function joinRoom() {
   }
 }
 
-// 9. 대기방 정보 실시간/연동 출력
-async function showRoom() {
+// 9. 대기방 정보 실시간 감시 및 연동 출력
+function listenRoom() {
   const currentCode = localStorage.getItem("currentRoomCode");
   if (!currentCode) return;
 
-  try {
-    const q = query(collection(db, "rooms"), where("inviteCode", "==", currentCode));
-    const querySnapshot = await getDocs(q);
-    
+  const q = query(collection(db, "rooms"), where("inviteCode", "==", currentCode));
+
+  onSnapshot(q, (querySnapshot) => {
     if (querySnapshot.empty) return;
     
-    const roomData = querySnapshot.docs[0].data();
+    const roomDoc = querySnapshot.docs[0];
+    const roomData = roomDoc.data();
     
-    // 화면 바인딩
     const roomTitleEl = document.getElementById("roomTitle");
     const inviteEl = document.getElementById("invite");
     if (roomTitleEl) roomTitleEl.innerText = roomData.roomName;
@@ -215,21 +246,61 @@ async function showRoom() {
 
     const list = document.getElementById("memberList");
     if (list) {
-      list.innerHTML = ""; // 초기화
+      list.innerHTML = "";
       roomData.members.forEach(member => {
         const li = document.createElement("li");
-        li.innerText = member.name;
+        li.innerText = `${member.name} 참여완료`; 
         list.appendChild(li);
       });
     }
     
+    const currentUser = auth.currentUser;
+    const recommendBtn = document.getElementById("btnRecommend");
+    if (recommendBtn && currentUser) {
+      if (roomData.creator === currentUser.uid) {
+        recommendBtn.style.display = "block";
+      } else {
+        recommendBtn.style.display = "none";
+      }
+    }
+    
     localStorage.setItem("roomMembers", JSON.stringify(roomData.members));
+  });
+}
+
+// [추가] 10. 대기방 나가기 (내가 나가면 대기방 리스트에서 실시간으로 이탈 처리)
+async function leaveRoom() {
+  const currentCode = localStorage.getItem("currentRoomCode");
+  const userProfile = JSON.parse(localStorage.getItem("userProfile"));
+  
+  if (!currentCode || !userProfile) {
+    go("main.html");
+    return;
+  }
+
+  try {
+    const q = query(collection(db, "rooms"), where("inviteCode", "==", currentCode));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const roomDoc = querySnapshot.docs[0];
+      const roomRef = doc(db, "rooms", roomDoc.id);
+
+      // members 배열에서 내 정보만 깔끔하게 제거
+      await updateDoc(roomRef, {
+        members: arrayRemove(userProfile)
+      });
+    }
+
+    localStorage.removeItem("currentRoomCode");
+    go("main.html");
   } catch (e) {
-    console.error("방 정보 로드 실패:", e);
+    console.error("방 나가기 실패:", e);
+    go("main.html");
   }
 }
 
-// 10. 추천 메뉴 알고리즘
+// 11. 추천 메뉴 알고리즘
 function recommendMenus() {
   const members = JSON.parse(localStorage.getItem("roomMembers"));
   if (!members || members.length === 0) return alert("참여한 멤버가 없습니다.");
@@ -239,20 +310,16 @@ function recommendMenus() {
     let reason = [];
 
     for (const member of members) {
-      // 못 먹는 음식이 걸리면 제외
       if (member.cannotEat && member.cannotEat.some(item => menu.tags.includes(item) || menu.category === item)) {
         return null;
       }
-      // 비선호 감점
       if (member.dislike && member.dislike.includes(menu.category)) {
         score -= 3;
       }
-      // 선호 가점 및 이유 수집
       if (member.preference && member.preference.includes(menu.category)) {
         score += 5;
         reason.push(`${member.name}님의 선호 음식`);
       }
-      // 매운맛 반영
       if (menu.spicy <= member.spicy) {
         score += 2;
       } else {
@@ -267,18 +334,17 @@ function recommendMenus() {
   go("result.html");
 }
 
-// [수정 완료] 11. 결과 화면 출력 (동적으로 수집된 실제 사유 연동)
+// 12. 결과 화면 출력
 function showResult() {
   const results = JSON.parse(localStorage.getItem("recommend")) || [];
   const box = document.getElementById("resultBox");
   if (!box) return;
 
-  box.innerHTML = ""; // 초기화
+  box.innerHTML = "";
   results.forEach((menu, index) => {
     const div = document.createElement("div");
     div.className = "menu-rank";
 
-    // 동적 사유가 존재하면 쉼표로 연결해서 보여주고, 비어있으면 기본 문구를 보여줌
     const reasonText = menu.reason && menu.reason.length > 0 
       ? menu.reason.join(", ") 
       : "못 먹는 음식 제외, 멤버들의 무난한 선호도와 매운맛 수용도 반영";
@@ -293,7 +359,7 @@ function showResult() {
   });
 }
 
-// 12. 진짜 로그아웃
+// 13. 로그아웃
 async function logout() {
   try {
     await signOut(auth);
@@ -304,15 +370,21 @@ async function logout() {
   }
 }
 
-// 외부 HTML 인라인 스크립트(onclick 등)에서 호출할 수 있도록 window 객체에 등록
-window.go = go;
+// 전역 등록 바인딩
 window.googleLogin = googleLogin;
 window.createOptions = createOptions;
-window.saveProfile = saveProfile;
+window.saveProfile = saveProfile; 
+
+window.saveStep1_Gender = saveStep1_Gender;
+window.saveStep2_Age = saveStep2_Age;
+window.saveFinalProfile = saveFinalProfile; 
+
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
-window.showRoom = showRoom;
+window.listenRoom = listenRoom; 
+window.leaveRoom = leaveRoom; // 추가된 방 나가기 전역 바인딩
 window.recommendMenus = recommendMenus;
 window.showResult = showResult;
 window.logout = logout;
 window.foodOptions = foodOptions;
+window.go = go;
