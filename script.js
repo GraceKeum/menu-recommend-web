@@ -1,7 +1,12 @@
-// 1. Firebase 모듈 가져오기
+// 1. Firebase 모듈 가져오기 (onSnapshot과 arrayRemove를 상단에 통합했습니다)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+<<<<<<< Updated upstream
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+=======
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+>>>>>>> Stashed changes
 
 // 2. Firebase 설정값
 const firebaseConfig = {
@@ -94,7 +99,11 @@ function getSelected(id) {
   return [...document.querySelectorAll(`#${id} .selected`)].map(el => el.innerText);
 }
 
+<<<<<<< Updated upstream
 // 5. Firestore에 프로필 저장
+=======
+// 6. Firestore 및 로컬에 프로필 저장 (기존 로직 그대로 유지)
+>>>>>>> Stashed changes
 async function saveProfile() {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -121,7 +130,48 @@ async function saveProfile() {
   }
 }
 
+<<<<<<< Updated upstream
 // 6. Firestore에 모임방 만들고 저장
+=======
+let tempProfile = {
+  gender: "",
+  ageRange: "",
+  cannotEat: [],
+  dislike: [],
+  preference: [],
+  spicy: 3
+};
+
+function saveStep1_Gender(gender) { tempProfile.gender = gender; }
+function saveStep2_Age(age) { tempProfile.ageRange = age; }
+
+async function saveFinalProfile() {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return alert("로그인이 필요합니다.");
+
+  const finalProfile = {
+    uid: currentUser.uid,
+    name: document.getElementById("name")?.value || currentUser.displayName || "사용자",
+    gender: tempProfile.gender,
+    ageRange: tempProfile.ageRange,
+    cannotEat: getSelected("cannotEat"),
+    dislike: getSelected("dislike"),
+    preference: getSelected("preference"),
+    spicy: Number(document.getElementById("spicy")?.value || 3)
+  };
+
+  try {
+    await setDoc(doc(db, "users", currentUser.uid), finalProfile);
+    localStorage.setItem("userProfile", JSON.stringify(finalProfile));
+    alert("프로필 설정이 모두 완료되었습니다! 🎉");
+    go("main.html");
+  } catch (e) {
+    console.error("최종 프로필 저장 실패:", e);
+  }
+}
+
+// 7. 모임방 만들기
+>>>>>>> Stashed changes
 async function createRoom() {
   const currentUser = auth.currentUser;
   const userProfile = JSON.parse(localStorage.getItem("userProfile"));
@@ -140,7 +190,11 @@ async function createRoom() {
   try {
     await addDoc(collection(db, "rooms"), roomData);
     localStorage.setItem("currentRoomCode", inviteCode);
+<<<<<<< Updated upstream
     go("room.html");
+=======
+    return inviteCode;
+>>>>>>> Stashed changes
   } catch (e) {
     console.error("방 생성 실패:", e);
   }
@@ -148,7 +202,14 @@ async function createRoom() {
 
 // 7. 초대코드로 진짜 Firestore 방 찾아서 참여하기
 async function joinRoom() {
+<<<<<<< Updated upstream
   const code = document.getElementById("inviteCode").value.toUpperCase();
+=======
+  const inviteCodeInput = document.getElementById("inviteCode");
+  if (!inviteCodeInput) return;
+
+  const code = inviteCodeInput.value.toUpperCase().trim();
+>>>>>>> Stashed changes
   const userProfile = JSON.parse(localStorage.getItem("userProfile"));
   if (!userProfile) return alert("프로필이 필요합니다.");
 
@@ -164,9 +225,18 @@ async function joinRoom() {
     const roomDoc = querySnapshot.docs[0];
     const roomRef = doc(db, "rooms", roomDoc.id);
 
+<<<<<<< Updated upstream
     await updateDoc(roomRef, {
       members: arrayUnion(userProfile)
     });
+=======
+    const isAlreadyMember = roomData.members.some(member => member.uid === userProfile.uid);
+    if (!isAlreadyMember) {
+      await updateDoc(roomRef, {
+        members: arrayUnion(userProfile)
+      });
+    }
+>>>>>>> Stashed changes
 
     localStorage.setItem("currentRoomCode", code);
     go("room.html");
@@ -175,19 +245,25 @@ async function joinRoom() {
   }
 }
 
+<<<<<<< Updated upstream
 // 8. 대기방 정보 실시간/연동 출력
 async function showRoom() {
+=======
+// 9. 대기방 정보 실시간 감시 및 연동 출력
+function listenRoom() {
+>>>>>>> Stashed changes
   const currentCode = localStorage.getItem("currentRoomCode");
   if (!currentCode) return;
 
-  try {
-    const q = query(collection(db, "rooms"), where("inviteCode", "==", currentCode));
-    const querySnapshot = await getDocs(q);
-    
+  const q = query(collection(db, "rooms"), where("inviteCode", "==", currentCode));
+
+  onSnapshot(q, (querySnapshot) => {
     if (querySnapshot.empty) return;
     
-    const roomData = querySnapshot.docs[0].data();
+    const roomDoc = querySnapshot.docs[0];
+    const roomData = roomDoc.data();
     
+<<<<<<< Updated upstream
     document.getElementById("roomTitle").innerText = roomData.roomName;
     document.getElementById("invite").innerText = roomData.inviteCode;
 
@@ -199,14 +275,74 @@ async function showRoom() {
       li.innerText = member.name;
       list.appendChild(li);
     });
+=======
+    const roomTitleEl = document.getElementById("roomTitle");
+    const inviteEl = document.getElementById("invite");
+    if (roomTitleEl) roomTitleEl.innerText = roomData.roomName;
+    if (inviteEl) inviteEl.innerText = roomData.inviteCode;
+
+    const list = document.getElementById("memberList");
+    if (list) {
+      list.innerHTML = "";
+      roomData.members.forEach(member => {
+        const li = document.createElement("li");
+        li.innerText = `${member.name} 참여완료`; 
+        list.appendChild(li);
+      });
+    }
+>>>>>>> Stashed changes
+    
+    const currentUser = auth.currentUser;
+    const recommendBtn = document.getElementById("btnRecommend");
+    if (recommendBtn && currentUser) {
+      if (roomData.creator === currentUser.uid) {
+        recommendBtn.style.display = "block";
+      } else {
+        recommendBtn.style.display = "none";
+      }
+    }
     
     localStorage.setItem("roomMembers", JSON.stringify(roomData.members));
+  });
+}
+
+// [추가] 10. 대기방 나가기 (내가 나가면 대기방 리스트에서 실시간으로 이탈 처리)
+async function leaveRoom() {
+  const currentCode = localStorage.getItem("currentRoomCode");
+  const userProfile = JSON.parse(localStorage.getItem("userProfile"));
+  
+  if (!currentCode || !userProfile) {
+    go("main.html");
+    return;
+  }
+
+  try {
+    const q = query(collection(db, "rooms"), where("inviteCode", "==", currentCode));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const roomDoc = querySnapshot.docs[0];
+      const roomRef = doc(db, "rooms", roomDoc.id);
+
+      // members 배열에서 내 정보만 깔끔하게 제거
+      await updateDoc(roomRef, {
+        members: arrayRemove(userProfile)
+      });
+    }
+
+    localStorage.removeItem("currentRoomCode");
+    go("main.html");
   } catch (e) {
-    console.error("방 정보 로드 실패:", e);
+    console.error("방 나가기 실패:", e);
+    go("main.html");
   }
 }
 
+<<<<<<< Updated upstream
 // 추천 메뉴 알고리즘
+=======
+// 11. 추천 메뉴 알고리즘
+>>>>>>> Stashed changes
 function recommendMenus() {
   const members = JSON.parse(localStorage.getItem("roomMembers"));
   if (!members) return alert("참여한 멤버가 없습니다.");
@@ -216,6 +352,7 @@ function recommendMenus() {
     let reason = [];
 
     for (const member of members) {
+<<<<<<< Updated upstream
       if (member.cannotEat.some(item => menu.tags.includes(item) || menu.category === item)) {
         return null;
       }
@@ -223,6 +360,15 @@ function recommendMenus() {
         score -= 3;
       }
       if (member.preference.includes(menu.category)) {
+=======
+      if (member.cannotEat && member.cannotEat.some(item => menu.tags.includes(item) || menu.category === item)) {
+        return null;
+      }
+      if (member.dislike && member.dislike.includes(menu.category)) {
+        score -= 3;
+      }
+      if (member.preference && member.preference.includes(menu.category)) {
+>>>>>>> Stashed changes
         score += 5;
         reason.push(`${member.name}님의 선호 음식`);
       }
@@ -240,14 +386,30 @@ function recommendMenus() {
   go("result.html");
 }
 
+<<<<<<< Updated upstream
+=======
+// 12. 결과 화면 출력
+>>>>>>> Stashed changes
 function showResult() {
   const results = JSON.parse(localStorage.getItem("recommend")) || [];
   const box = document.getElementById("resultBox");
   if(!box) return;
 
+<<<<<<< Updated upstream
   results.forEach((menu, index) => {
     const div = document.createElement("div");
     div.className = "menu-rank";
+=======
+  box.innerHTML = "";
+  results.forEach((menu, index) => {
+    const div = document.createElement("div");
+    div.className = "menu-rank";
+
+    const reasonText = menu.reason && menu.reason.length > 0 
+      ? menu.reason.join(", ") 
+      : "못 먹는 음식 제외, 멤버들의 무난한 선호도와 매운맛 수용도 반영";
+
+>>>>>>> Stashed changes
     div.innerHTML = `
       <h3>${index + 1}. ${menu.name}</h3>
       <p>종류: ${menu.category}</p>
@@ -258,20 +420,34 @@ function showResult() {
   });
 }
 
+<<<<<<< Updated upstream
 // 로그아웃
+=======
+// 13. 로그아웃
+>>>>>>> Stashed changes
 async function logout() {
   await signOut(auth);
   localStorage.clear();
   go("index.html");
 }
 
+<<<<<<< Updated upstream
 // 외부 HTML 버튼용 전역 객체(window) 등록 등록 완료 (오타 수정됨)
+=======
+// 전역 등록 바인딩
+>>>>>>> Stashed changes
 window.googleLogin = googleLogin;
 window.createOptions = createOptions;
-window.saveProfile = saveProfile;
+window.saveProfile = saveProfile; 
+
+window.saveStep1_Gender = saveStep1_Gender;
+window.saveStep2_Age = saveStep2_Age;
+window.saveFinalProfile = saveFinalProfile; 
+
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
-window.showRoom = showRoom;
+window.listenRoom = listenRoom; 
+window.leaveRoom = leaveRoom; // 추가된 방 나가기 전역 바인딩
 window.recommendMenus = recommendMenus;
 window.showResult = showResult;
 window.logout = logout;
