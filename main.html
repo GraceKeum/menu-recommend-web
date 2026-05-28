@@ -28,6 +28,16 @@
       <button onclick="go('join.html')">모임방 참여하기</button>
     </div>
 
+    <div class="card">
+      <h3>참여 중인 모임</h3>
+      <p>현재 속한 모임 목록을 확인해요.</p>
+      <button id="toggleRoomListBtn" onclick="toggleRoomList()">모임 목록 보기</button>
+      <div id="roomPanel" class="room-panel hidden">
+        <p class="room-panel-desc">모임 내부에서 목록을 확인하고 즉시 입장할 수 있어요.</p>
+        <ul id="myRoomList" class="room-list"></ul>
+      </div>
+    </div>
+
     <button class="secondary" onclick="logout()">로그아웃</button>
   </div>
 

@@ -59,26 +59,21 @@
 
   <script>
     window.onload = () => {
-      if (typeof window.createOptions === 'function' && window.foodOptions) {
-        createOptions("cannotEat", window.foodOptions.cannotEat);
-        createOptions("dislike", window.foodOptions.dislike);
-        createOptions("preference", window.foodOptions.preference, 3);
+      if (typeof window.populateProfileForm === 'function') {
+        window.populateProfileForm();
       }
     };
+
+    const genderSelect = document.getElementById('gender');
+    if (genderSelect) {
+      genderSelect.addEventListener('change', function() {
+        if (this.value !== "") {
+          this.style.color = "#333";
+        } else {
+          this.style.color = "#aaa";
+        }
+      });
+    }
   </script>
 </body>
 </html>
-
-<script>
-  // 성별 창을 선택해서 가져옵니다.
-  const genderSelect = document.getElementById('gender');
-
-  // 사용자가 성별을 바꿀 때마다 실행되는 함수
-  genderSelect.addEventListener('change', function() {
-    if (this.value !== "") {
-      this.style.color = "#333"; // 성별을 선택하면 블랙!
-    } else {
-      this.style.color = "#aaa"; // 다시 '성별 선택'으로 바꾸면 회색!
-    }
-  });
-</script>

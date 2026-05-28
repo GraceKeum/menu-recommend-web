@@ -150,3 +150,62 @@ input {
 #gender {
   color: #757575;
 }
+
+.hidden {
+  display: none;
+}
+
+.room-panel {
+  margin-top: 12px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #ffd0d8;
+  border-radius: 16px;
+}
+
+.room-panel-desc {
+  margin: 0 0 12px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.room-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid #ffd0d8;
+}
+
+.room-item button {
+  width: auto;
+  min-width: 80px;
+  padding: 10px 14px;
+  margin-top: 0;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.room-info strong {
+  display: block;
+}
+
+.room-info span {
+  color: #777;
+  font-size: 14px;
+}

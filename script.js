@@ -1,14 +1,8 @@
-// 1. Firebase 모듈 가져오기 (onSnapshot과 arrayRemove를 상단에 통합했습니다)
+// 1. Firebase 모듈 가져오기
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-<<<<<<< Updated upstream
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-=======
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
->>>>>>> Stashed changes
 
-// 2. Firebase 설정값
 const firebaseConfig = {
   apiKey: "AIzaSyDsP5clLaaCjosivSajF7gHruXrzsWg6uI",
   authDomain: "menu-f69b6.firebaseapp.com",
@@ -19,13 +13,33 @@ const firebaseConfig = {
   measurementId: "G-31Z5285C6X"
 };
 
-// 3. Firebase 초기화
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
-// 데이터셋
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    if (typeof populateProfileForm === 'function') {
+      try {
+        await populateProfileForm();
+      } catch (e) {
+        console.error('Auth state profile load 실패:', e);
+      }
+    }
+  }
+});
+
+async function ensureCurrentUser() {
+  if (auth.currentUser) return auth.currentUser;
+  return new Promise(resolve => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
 const foodOptions = {
   cannotEat: ["갑각류", "조개류", "생선", "견과류", "우유 / 유제품", "계란", "밀가루", "돼지고기", "소고기", "닭고기", "매운 음식", "날 음식", "향 강한 음식", "없음"],
   dislike: ["한식", "중식", "일식", "양식", "분식", "패스트푸드", "마라", "치킨", "피자", "햄버거", "국물류", "고기류", "해산물", "채소 위주 음식", "디저트류", "없음"],
@@ -45,24 +59,22 @@ const menus = [
   { name: "샐러드", category: "샐러드/다이어트식", spicy: 1, tags: ["채소 위주 음식"] }
 ];
 
-// 화면 이동 함수 (렉 방지 로직 추가)
 function go(page) {
-  window.stop(); // 무거운 파이어베이스 다운로드 스트림을 즉시 끊어버림
-  location.replace(page); // 잔여 메모리를 지우며 안전하게 이동
+  window.stop();
+  location.replace(page);
 }
 
-// 4. 구글 로그인 함수
 async function googleLogin() {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    
     const userDoc = await getDoc(doc(db, "users", user.uid));
-    
+
     if (userDoc.exists()) {
       localStorage.setItem("userProfile", JSON.stringify(userDoc.data()));
       go("main.html");
     } else {
+      localStorage.removeItem("userProfile");
       go("profile.html");
     }
   } catch (error) {
@@ -71,15 +83,19 @@ async function googleLogin() {
   }
 }
 
-// UI 옵션 생성
-function createOptions(id, items, max = null) {
+function createOptions(id, items, max = null, selectedItems = []) {
   const box = document.getElementById(id);
   if (!box) return;
 
+  box.innerHTML = "";
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "option";
     div.innerText = item;
+
+    if (selectedItems.includes(item)) {
+      div.classList.add("selected");
+    }
 
     div.onclick = () => {
       if (max) {
@@ -91,6 +107,7 @@ function createOptions(id, items, max = null) {
       }
       div.classList.toggle("selected");
     };
+
     box.appendChild(div);
   });
 }
@@ -99,11 +116,58 @@ function getSelected(id) {
   return [...document.querySelectorAll(`#${id} .selected`)].map(el => el.innerText);
 }
 
-<<<<<<< Updated upstream
-// 5. Firestore에 프로필 저장
-=======
-// 6. Firestore 및 로컬에 프로필 저장 (기존 로직 그대로 유지)
->>>>>>> Stashed changes
+async function loadUserProfile() {
+  let profile = null;
+
+  if (auth.currentUser) {
+    try {
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+      if (userDoc.exists()) {
+        profile = userDoc.data();
+        localStorage.setItem("userProfile", JSON.stringify(profile));
+      } else {
+        localStorage.removeItem("userProfile");
+      }
+    } catch (e) {
+      console.error("Firestore에서 프로필 로드 실패:", e);
+    }
+  }
+
+  if (!profile) {
+    const storedProfile = localStorage.getItem("userProfile");
+    if (storedProfile) {
+      try {
+        profile = JSON.parse(storedProfile);
+      } catch (e) {
+        console.error("로컬 프로필 파싱 실패:", e);
+      }
+    }
+  }
+
+  return profile;
+}
+
+async function populateProfileForm() {
+  const profile = await loadUserProfile();
+
+  const nameInput = document.getElementById("name");
+  const ageInput = document.getElementById("age");
+  const genderSelect = document.getElementById("gender");
+  const spicyInput = document.getElementById("spicy");
+
+  if (nameInput) nameInput.value = profile?.name || "";
+  if (ageInput) ageInput.value = profile?.age || "";
+  if (genderSelect) {
+    genderSelect.value = profile?.gender || "";
+    genderSelect.style.color = profile?.gender ? "#333" : "#aaa";
+  }
+  if (spicyInput) spicyInput.value = profile?.spicy || 3;
+
+  createOptions("cannotEat", foodOptions.cannotEat, null, profile?.cannotEat || []);
+  createOptions("dislike", foodOptions.dislike, null, profile?.dislike || []);
+  createOptions("preference", foodOptions.preference, 3, profile?.preference || []);
+}
+
 async function saveProfile() {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -112,12 +176,14 @@ async function saveProfile() {
   }
 
   const profile = {
-    uid: currentUser.uid,
-    name: document.getElementById("name").value || currentUser.displayName || "사용자",
+    name: document.getElementById("name")?.value || currentUser.displayName || "사용자",
+    age: Number(document.getElementById("age")?.value) || null,
+    gender: document.getElementById("gender")?.value || "",
     cannotEat: getSelected("cannotEat"),
     dislike: getSelected("dislike"),
     preference: getSelected("preference"),
-    spicy: Number(document.getElementById("spicy").value)
+    spicy: Number(document.getElementById("spicy")?.value || 3),
+    uid: currentUser.uid
   };
 
   try {
@@ -127,57 +193,36 @@ async function saveProfile() {
     go("main.html");
   } catch (e) {
     console.error("프로필 저장 실패:", e);
+    alert("프로필 저장에 실패했습니다.");
   }
 }
 
-<<<<<<< Updated upstream
-// 6. Firestore에 모임방 만들고 저장
-=======
-let tempProfile = {
-  gender: "",
-  ageRange: "",
-  cannotEat: [],
-  dislike: [],
-  preference: [],
-  spicy: 3
-};
-
-function saveStep1_Gender(gender) { tempProfile.gender = gender; }
-function saveStep2_Age(age) { tempProfile.ageRange = age; }
-
-async function saveFinalProfile() {
-  const currentUser = auth.currentUser;
-  if (!currentUser) return alert("로그인이 필요합니다.");
-
-  const finalProfile = {
-    uid: currentUser.uid,
-    name: document.getElementById("name")?.value || currentUser.displayName || "사용자",
-    gender: tempProfile.gender,
-    ageRange: tempProfile.ageRange,
-    cannotEat: getSelected("cannotEat"),
-    dislike: getSelected("dislike"),
-    preference: getSelected("preference"),
-    spicy: Number(document.getElementById("spicy")?.value || 3)
-  };
-
-  try {
-    await setDoc(doc(db, "users", currentUser.uid), finalProfile);
-    localStorage.setItem("userProfile", JSON.stringify(finalProfile));
-    alert("프로필 설정이 모두 완료되었습니다! 🎉");
-    go("main.html");
-  } catch (e) {
-    console.error("최종 프로필 저장 실패:", e);
-  }
-}
-
-// 7. 모임방 만들기
->>>>>>> Stashed changes
 async function createRoom() {
   const currentUser = auth.currentUser;
-  const userProfile = JSON.parse(localStorage.getItem("userProfile"));
-  if (!userProfile) return alert("프로필 정보가 없습니다.");
+  if (!currentUser) {
+    alert("로그인이 필요합니다.");
+    go("index.html");
+    return;
+  }
 
-  const roomName = document.getElementById("roomName").value || "우리 모임";
+  let userProfile = null;
+  try {
+    userProfile = JSON.parse(localStorage.getItem("userProfile"));
+  } catch (e) {
+    console.error("로컬 프로필 파싱 실패:", e);
+  }
+
+  if (!userProfile) {
+    userProfile = await loadUserProfile();
+  }
+
+  if (!userProfile) {
+    alert("프로필 정보가 없습니다. 프로필을 먼저 작성해주세요.");
+    go("profile.html");
+    return;
+  }
+
+  const roomName = document.getElementById("roomName")?.value || "우리 모임";
   const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   const roomData = {
@@ -190,26 +235,89 @@ async function createRoom() {
   try {
     await addDoc(collection(db, "rooms"), roomData);
     localStorage.setItem("currentRoomCode", inviteCode);
-<<<<<<< Updated upstream
     go("room.html");
-=======
-    return inviteCode;
->>>>>>> Stashed changes
   } catch (e) {
     console.error("방 생성 실패:", e);
+    alert("모임방 생성에 실패했습니다.");
   }
 }
 
-// 7. 초대코드로 진짜 Firestore 방 찾아서 참여하기
+async function loadMyRooms() {
+  const currentUser = auth.currentUser || await ensureCurrentUser();
+  if (!currentUser) return;
+
+  try {
+    const roomList = document.getElementById("myRoomList");
+    if (!roomList) return;
+
+    roomList.innerHTML = "<li>로딩 중...</li>";
+
+    const querySnapshot = await getDocs(collection(db, "rooms"));
+    const rooms = [];
+
+    querySnapshot.forEach(docSnap => {
+      const roomData = docSnap.data();
+      if (Array.isArray(roomData.members) && roomData.members.some(member => member.uid === currentUser.uid)) {
+        rooms.push({ id: docSnap.id, ...roomData });
+      }
+    });
+
+    roomList.innerHTML = "";
+    if (rooms.length === 0) {
+      const emptyItem = document.createElement("li");
+      emptyItem.innerText = "참여 중인 모임이 없습니다.";
+      roomList.appendChild(emptyItem);
+      return;
+    }
+
+    rooms.forEach(room => {
+      const item = document.createElement("li");
+      item.className = "room-item";
+      item.innerHTML = `
+        <div class="room-info">
+          <strong>${room.roomName}</strong>
+          <span>${room.inviteCode}</span>
+        </div>
+      `;
+
+      const enterButton = document.createElement("button");
+      enterButton.textContent = "입장";
+      enterButton.onclick = () => {
+        localStorage.setItem("currentRoomCode", room.inviteCode);
+        go("room.html");
+      };
+      item.appendChild(enterButton);
+      roomList.appendChild(item);
+    });
+  } catch (e) {
+    console.error("내 모임 불러오기 실패:", e);
+  }
+}
+
+async function toggleRoomList() {
+  const roomPanel = document.getElementById("roomPanel");
+  const toggleBtn = document.getElementById("toggleRoomListBtn");
+  if (!roomPanel) return;
+
+  if (roomPanel.classList.contains("hidden")) {
+    roomPanel.classList.remove("hidden");
+    if (typeof loadMyRooms === 'function') {
+      await loadMyRooms();
+    }
+    if (toggleBtn) toggleBtn.textContent = "목록 숨기기";
+  } else {
+    roomPanel.classList.add("hidden");
+    if (toggleBtn) toggleBtn.textContent = "모임 목록 보기";
+  }
+}
+
 async function joinRoom() {
-<<<<<<< Updated upstream
-  const code = document.getElementById("inviteCode").value.toUpperCase();
-=======
   const inviteCodeInput = document.getElementById("inviteCode");
   if (!inviteCodeInput) return;
 
   const code = inviteCodeInput.value.toUpperCase().trim();
->>>>>>> Stashed changes
+  if (!code) return alert("초대코드를 입력하세요.");
+
   const userProfile = JSON.parse(localStorage.getItem("userProfile"));
   if (!userProfile) return alert("프로필이 필요합니다.");
 
@@ -223,94 +331,63 @@ async function joinRoom() {
     }
 
     const roomDoc = querySnapshot.docs[0];
+    const roomData = roomDoc.data();
     const roomRef = doc(db, "rooms", roomDoc.id);
 
-<<<<<<< Updated upstream
-    await updateDoc(roomRef, {
-      members: arrayUnion(userProfile)
-    });
-=======
-    const isAlreadyMember = roomData.members.some(member => member.uid === userProfile.uid);
+    const isAlreadyMember = Array.isArray(roomData.members) && roomData.members.some(member => member.uid === userProfile.uid);
     if (!isAlreadyMember) {
       await updateDoc(roomRef, {
         members: arrayUnion(userProfile)
       });
     }
->>>>>>> Stashed changes
 
     localStorage.setItem("currentRoomCode", code);
     go("room.html");
   } catch (e) {
     console.error("방 참여 실패:", e);
+    alert("모임 참여에 실패했습니다.");
   }
 }
 
-<<<<<<< Updated upstream
-// 8. 대기방 정보 실시간/연동 출력
-async function showRoom() {
-=======
-// 9. 대기방 정보 실시간 감시 및 연동 출력
-function listenRoom() {
->>>>>>> Stashed changes
+function showRoom() {
   const currentCode = localStorage.getItem("currentRoomCode");
-  if (!currentCode) return;
+  if (!currentCode) {
+    alert("현재 대기방 정보가 없습니다.");
+    go("main.html");
+    return;
+  }
 
   const q = query(collection(db, "rooms"), where("inviteCode", "==", currentCode));
 
   onSnapshot(q, (querySnapshot) => {
     if (querySnapshot.empty) return;
-    
+
     const roomDoc = querySnapshot.docs[0];
     const roomData = roomDoc.data();
-    
-<<<<<<< Updated upstream
-    document.getElementById("roomTitle").innerText = roomData.roomName;
-    document.getElementById("invite").innerText = roomData.inviteCode;
 
-    const list = document.getElementById("memberList");
-    list.innerHTML = "";
-    
-    roomData.members.forEach(member => {
-      const li = document.createElement("li");
-      li.innerText = member.name;
-      list.appendChild(li);
-    });
-=======
     const roomTitleEl = document.getElementById("roomTitle");
     const inviteEl = document.getElementById("invite");
-    if (roomTitleEl) roomTitleEl.innerText = roomData.roomName;
-    if (inviteEl) inviteEl.innerText = roomData.inviteCode;
+    if (roomTitleEl) roomTitleEl.innerText = roomData.roomName || "모임방";
+    if (inviteEl) inviteEl.innerText = roomData.inviteCode || currentCode;
 
     const list = document.getElementById("memberList");
     if (list) {
       list.innerHTML = "";
-      roomData.members.forEach(member => {
+      (roomData.members || []).forEach(member => {
         const li = document.createElement("li");
-        li.innerText = `${member.name} 참여완료`; 
+        li.innerText = member.name || "익명";
         list.appendChild(li);
       });
     }
->>>>>>> Stashed changes
-    
-    const currentUser = auth.currentUser;
-    const recommendBtn = document.getElementById("btnRecommend");
-    if (recommendBtn && currentUser) {
-      if (roomData.creator === currentUser.uid) {
-        recommendBtn.style.display = "block";
-      } else {
-        recommendBtn.style.display = "none";
-      }
-    }
-    
-    localStorage.setItem("roomMembers", JSON.stringify(roomData.members));
+
+    localStorage.setItem("roomMembers", JSON.stringify(roomData.members || []));
   });
 }
 
-// [추가] 10. 대기방 나가기 (내가 나가면 대기방 리스트에서 실시간으로 이탈 처리)
 async function leaveRoom() {
   const currentCode = localStorage.getItem("currentRoomCode");
   const userProfile = JSON.parse(localStorage.getItem("userProfile"));
-  
+
   if (!currentCode || !userProfile) {
     go("main.html");
     return;
@@ -323,8 +400,6 @@ async function leaveRoom() {
     if (!querySnapshot.empty) {
       const roomDoc = querySnapshot.docs[0];
       const roomRef = doc(db, "rooms", roomDoc.id);
-
-      // members 배열에서 내 정보만 깔끔하게 제거
       await updateDoc(roomRef, {
         members: arrayRemove(userProfile)
       });
@@ -338,29 +413,15 @@ async function leaveRoom() {
   }
 }
 
-<<<<<<< Updated upstream
-// 추천 메뉴 알고리즘
-=======
-// 11. 추천 메뉴 알고리즘
->>>>>>> Stashed changes
 function recommendMenus() {
   const members = JSON.parse(localStorage.getItem("roomMembers"));
-  if (!members) return alert("참여한 멤버가 없습니다.");
+  if (!Array.isArray(members) || members.length === 0) return alert("참여한 멤버가 없습니다.");
 
   const results = menus.map(menu => {
     let score = 0;
     let reason = [];
 
     for (const member of members) {
-<<<<<<< Updated upstream
-      if (member.cannotEat.some(item => menu.tags.includes(item) || menu.category === item)) {
-        return null;
-      }
-      if (member.dislike.includes(menu.category)) {
-        score -= 3;
-      }
-      if (member.preference.includes(menu.category)) {
-=======
       if (member.cannotEat && member.cannotEat.some(item => menu.tags.includes(item) || menu.category === item)) {
         return null;
       }
@@ -368,88 +429,86 @@ function recommendMenus() {
         score -= 3;
       }
       if (member.preference && member.preference.includes(menu.category)) {
->>>>>>> Stashed changes
         score += 5;
         reason.push(`${member.name}님의 선호 음식`);
       }
-      if (menu.spicy <= member.spicy) {
-        score += 2;
-      } else {
-        score -= 2;
+      if (typeof member.spicy === "number") {
+        if (menu.spicy <= member.spicy) {
+          score += 2;
+        } else {
+          score -= 2;
+        }
       }
     }
+
     return { ...menu, score, reason };
   }).filter(Boolean);
+
+  if (results.length === 0) {
+    alert("조건에 맞는 메뉴가 없습니다.");
+    return;
+  }
 
   results.sort((a, b) => b.score - a.score);
   localStorage.setItem("recommend", JSON.stringify(results.slice(0, 3)));
   go("result.html");
 }
 
-<<<<<<< Updated upstream
-=======
-// 12. 결과 화면 출력
->>>>>>> Stashed changes
 function showResult() {
   const results = JSON.parse(localStorage.getItem("recommend")) || [];
   const box = document.getElementById("resultBox");
-  if(!box) return;
+  if (!box) return;
 
-<<<<<<< Updated upstream
-  results.forEach((menu, index) => {
-    const div = document.createElement("div");
-    div.className = "menu-rank";
-=======
   box.innerHTML = "";
+
+  if (results.length === 0) {
+    box.innerHTML = "<p>추천 결과가 없습니다.</p>";
+    return;
+  }
+
   results.forEach((menu, index) => {
     const div = document.createElement("div");
     div.className = "menu-rank";
+    const reasonText = menu.reason && menu.reason.length > 0
+      ? menu.reason.join(", ")
+      : "못 먹는 음식 제외, 선호도와 매운맛을 반영했습니다.";
 
-    const reasonText = menu.reason && menu.reason.length > 0 
-      ? menu.reason.join(", ") 
-      : "못 먹는 음식 제외, 멤버들의 무난한 선호도와 매운맛 수용도 반영";
-
->>>>>>> Stashed changes
     div.innerHTML = `
       <h3>${index + 1}. ${menu.name}</h3>
       <p>종류: ${menu.category}</p>
       <p>매운맛 단계: ${menu.spicy}</p>
-      <p>추천 이유: 못 먹는 음식 제외, 선호도와 매운맛 반영</p>
+      <p>추천 이유: ${reasonText}</p>
     `;
     box.appendChild(div);
   });
 }
 
-<<<<<<< Updated upstream
-// 로그아웃
-=======
-// 13. 로그아웃
->>>>>>> Stashed changes
 async function logout() {
-  await signOut(auth);
-  localStorage.clear();
-  go("index.html");
+  try {
+    await signOut(auth);
+    localStorage.removeItem("userProfile");
+    localStorage.removeItem("currentRoomCode");
+    localStorage.removeItem("roomMembers");
+    localStorage.removeItem("recommend");
+    go("index.html");
+  } catch (e) {
+    console.error("로그아웃 실패:", e);
+    alert("로그아웃에 실패했습니다.");
+  }
 }
 
-<<<<<<< Updated upstream
-// 외부 HTML 버튼용 전역 객체(window) 등록 등록 완료 (오타 수정됨)
-=======
-// 전역 등록 바인딩
->>>>>>> Stashed changes
+window.go = go;
 window.googleLogin = googleLogin;
+window.logout = logout;
 window.createOptions = createOptions;
-window.saveProfile = saveProfile; 
-
-window.saveStep1_Gender = saveStep1_Gender;
-window.saveStep2_Age = saveStep2_Age;
-window.saveFinalProfile = saveFinalProfile; 
-
+window.saveProfile = saveProfile;
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
-window.listenRoom = listenRoom; 
-window.leaveRoom = leaveRoom; // 추가된 방 나가기 전역 바인딩
+window.showRoom = showRoom;
 window.recommendMenus = recommendMenus;
 window.showResult = showResult;
-window.logout = logout;
+window.leaveRoom = leaveRoom;
+window.populateProfileForm = populateProfileForm;
+window.loadMyRooms = loadMyRooms;
+window.toggleRoomList = toggleRoomList;
 window.foodOptions = foodOptions;
-window.go = go;
