@@ -4,7 +4,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // 💡 Groq API Key
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = "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";
 
 // 2. Firebase 설정값
 const firebaseConfig = {
@@ -36,7 +36,7 @@ function go(page) {
   location.replace(page);
 }
 
-// 회원 인증 상태 감지 (친구 기능 반영)
+// 회원 인증 상태 감지
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     if (typeof populateProfileForm === 'function') {
@@ -79,7 +79,7 @@ async function googleLogin() {
   }
 }
 
-// UI 옵션 생성 (기존 선택 데이터 채워넣는 친구 로직으로 업그레이드)
+// UI 옵션 생성
 function createOptions(id, items, max = null, selectedItems = []) {
   const box = document.getElementById(id);
   if (!box) return;
@@ -113,7 +113,7 @@ function getSelected(id) {
   return [...document.querySelectorAll(`#${id} .selected`)].map(el => el.innerText);
 }
 
-// 기존 유저 프로필 불러오기 (친구 기능 반영)
+// 기존 유저 프로필 불러오기
 async function loadUserProfile() {
   let profile = null;
   if (auth.currentUser) {
@@ -138,7 +138,7 @@ async function loadUserProfile() {
   return profile;
 }
 
-// 프로필 폼에 기존 정보 채우기 (친구 기능 반영)
+// 프로필 폼에 기존 정보 채우기
 async function populateProfileForm() {
   const profile = await loadUserProfile();
   const nameInput = document.getElementById("name");
@@ -159,7 +159,7 @@ async function populateProfileForm() {
   createOptions("preference", foodOptions.preference, 3, profile?.preference || []);
 }
 
-// 5. Firestore에 프로필 저장 (나이, 성별 추가된 친구 스펙 반영)
+// 5. Firestore에 프로필 저장
 async function saveProfile() {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -228,7 +228,7 @@ async function createRoom() {
   }
 }
 
-// 내가 참여한 방 목록 가져오기 (친구 기능 반영)
+// 내가 참여한 방 목록 가져오기
 async function loadMyRooms() {
   const currentUser = auth.currentUser || await ensureCurrentUser();
   if (!currentUser) return;
@@ -277,7 +277,7 @@ async function loadMyRooms() {
   }
 }
 
-// 모임 목록 패널 토글 (친구 기능 반영)
+// 모임 목록 패널 토글
 async function toggleRoomList() {
   const roomPanel = document.getElementById("roomPanel");
   const toggleBtn = document.getElementById("toggleRoomListBtn");
@@ -293,7 +293,7 @@ async function toggleRoomList() {
   }
 }
 
-// 7. 초대코드로 진짜 Firestore 방 찾아서 참여하기 (친구 중복체크 로직 보완)
+// 7. 초대코드로 Firestore 방 찾아서 참여하기
 async function joinRoom() {
   const inviteCodeInput = document.getElementById("inviteCode");
   if (!inviteCodeInput) return;
@@ -332,7 +332,7 @@ async function joinRoom() {
   }
 }
 
-// 8. 대기방 정보 실시간 감시 (onSnapshot 친구 로직 보완)
+// 8. 대기방 정보 실시간 감시
 function showRoom() {
   const currentCode = localStorage.getItem("currentRoomCode");
   if (!currentCode) {
@@ -367,7 +367,7 @@ function showRoom() {
   });
 }
 
-// 방 나가기 기능 (친구 기능 반영)
+// 방 나가기 기능
 async function leaveRoom() {
   const currentCode = localStorage.getItem("currentRoomCode");
   const userProfile = JSON.parse(localStorage.getItem("userProfile"));
@@ -396,55 +396,36 @@ async function leaveRoom() {
   }
 }
 
-// 🤖 내 진짜 핵심: Groq AI 메뉴 추천 로직
+// 🤖 Groq AI 메뉴 추천 로직
 async function recommendMenus() {
   const members = JSON.parse(localStorage.getItem("roomMembers"));
   if (!members || members.length === 0) return alert("참여한 멤버가 없습니다.");
 
   localStorage.setItem("recommend_loading", "true");
   localStorage.removeItem("recommend_text");
-  
+
   let membersSummary = "";
   members.forEach((m, idx) => {
-    const cannotEatList = Array.isArray(m.cannotEat) && m.cannotEat.length > 0 ? m.cannotEat.join(", ") : "없음";
-    const dislikeList = Array.isArray(m.dislike) && m.dislike.length > 0 ? m.dislike.join(", ") : "없음";
-    const preferenceList = Array.isArray(m.preference) && m.preference.length > 0 ? m.preference.join(", ") : "상관없음";
-
-    membersSummary += `
-    [멤버 ${idx + 1}]
-    - 이름: ${m.name || "익명"}
-    - 절대 못 먹는 음식: ${cannotEatList}
-    - 싫어하는 음식: ${dislikeList}
-    - 선호 카테고리: ${preferenceList}
-    - 매운맛 선호도(1~5): ${m.spicy || 1}단계
-    `;
+    const cannotEatList = Array.isArray(m.cannotEat) && m.cannotEat.length > 0 ? m.cannotEat.join(",") : "없음";
+    const dislikeList = Array.isArray(m.dislike) && m.dislike.length > 0 ? m.dislike.join(",") : "없음";
+    const preferenceList = Array.isArray(m.preference) && m.preference.length > 0 ? m.preference.join(",") : "상관없음";
+    membersSummary += `M${idx+1}:못먹는[${cannotEatList}],싫어하는[${dislikeList}],선호[${preferenceList}],매운맛[${m.spicy||1}]\n`;
   });
 
   const promptMessage = `
-    다음은 하나의 모임방에 모인 사람들의 프로필과 음식 취향 리스트야. 
-    이 모든 사람들의 취향을 종합적으로 고려해서 오늘 다 같이 먹기 좋은 점심/저녁 메뉴 3가지를 추천하고 구체적인 이유를 설명해줘.
-    
+    다음 유저 취향 분석 후 점심/저녁 메뉴 3개 추천해줘.
     ${membersSummary}
-    
-    [출력 및 추천 규칙]
-    1. 멤버 정보 중 '절대 못 먹는 음식'이 '없음'이 아니라 진짜 특정 음식이 적혀있다면, 해당 재료나 카테고리는 절대로 추천 메뉴에 포함되면 안 돼.
-    2. '싫어하는 음식'도 최대한 피하되, 전체 멤버가 조화롭게 먹을 수 있는 최적의 메뉴를 찾아줘.
-    3. 각 멤버들의 매운맛 선호도를 고려해서 너무 맵거나 너무 밋밋하지 않은 메뉴들로 구성해줘.
-    4. 친근하고 위트 있는 톤앤매너로 답변해줘.
-    5. 출력 포맷은 반드시 아래 형식을 정확히 지켜줘. (HTML 태그나 마크다운 기호 없이 순수한 텍스트와 줄바꿈으로만 출력해줘)
-    6. 멤버 이름, 알레르기, 취향 등 멤버 개인 정보는 절대 출력하지 마.
-    7. 쓸데없는 말 출력하지 말고, 메뉴와 이유만 출력해.
-    8. 이유에 멤버 누구가 괜찮다는 식의 불필요한 말은 빼줘.
-    9. 멤버 이름은 이유에서 빼줘.
-    
-    🥇 1위: [메뉴 이름]
-    추천 이유: [한 줄 설명]
-    
-    🥈 2위: [메뉴 이름]
-    추천 이유: [한 줄 설명]
-    
-    🥉 3위: [메뉴 이름]
-    추천 이유: [한 줄 설명]
+    [규칙]
+    1. 인사말, 안내멘트 절대 금지. 오직 결과만 포맷대로 출력할 것.
+    2. 추천이유에 유저의 실제 고유 이름을 적지마라. '멤버들'로 퉁쳐라.
+    3. 아래 포맷을 무조건 준수해라. 숫자와 위 형태(1위, 2위, 3위)로 작성해라.
+
+    1위: [메뉴명]
+    추천 이유: [한줄설명]
+    2위: [메뉴명]
+    추천 이유: [한줄설명]
+    3위: [메뉴명]
+    추천 이유: [한줄설명]
   `;
 
   try {
@@ -455,9 +436,10 @@ async function recommendMenus() {
         "Authorization": `Bearer ${GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: promptMessage }],
-        max_tokens: 1000
+        temperature: 0.9,
+        max_tokens: 600
       })
     });
 
@@ -469,19 +451,19 @@ async function recommendMenus() {
     } else if (data.error) {
       localStorage.setItem("recommend_text", `Groq 서버 에러: ${data.error.message}`);
     } else {
-      localStorage.setItem("recommend_text", "AI 통신은 성공했으나 답변 형식을 읽지 못했습니다. 다시 시도해 주세요!");
+      localStorage.setItem("recommend_text", "AI 통신은 성공했으나 답변 형식을 읽지 못했습니다.");
     }
 
   } catch (error) {
     console.error("Groq API 호출 실패:", error);
-    localStorage.setItem("recommend_text", "네트워크 통신 중 오류가 발생했습니다. API 키를 확인해 주세요.");
+    localStorage.setItem("recommend_text", "네트워크 오류가 발생했습니다.");
   } finally {
     localStorage.removeItem("recommend_loading");
-    go("result.html");
+    go("result.html"); // ✅ API 완료 후 페이지 이동
   }
 }
 
-// 내 진짜 핵심: 결과 카드 UI 출력 로직
+// 🛠️ 결과 UI 출력 로직
 function showResult() {
   const box = document.getElementById("resultBox");
   if (!box) return;
@@ -498,55 +480,95 @@ function showResult() {
         <p>모든 멤버의 취향과 알레르기를 분석하여<br>AI가 최고의 메뉴를 조율하는 중입니다...</p>
       </div>
     `;
-  } else if (aiText) {
-    const medals = ["🥇", "🥈", "🥉"];
-    const ranks = ["1위", "2위", "3위"];
-    const colors = ["#fff9e6", "#f5f5f5", "#fff3ec"];
-    const borders = ["#ffc107", "#bbbbbb", "#ff8c42"];
+    return;
+  }
 
-    const blocks = aiText.split(/(?=🥇|🥈|🥉)/).filter(s => s.trim());
+  if (!aiText) {
+    box.innerHTML = `<p style="text-align:center; color:#aaa; padding: 20px;">추천된 결과가 없습니다. 방에서 다시 추천 버튼을 눌러주세요.</p>`;
+    return;
+  }
 
-    if (blocks.length === 3) {
-      blocks.forEach((block, i) => {
-        const menuMatch = block.match(/[🥇🥈🥉]\s*\d위\s*[:：]\s*(.+)/);
-        const reasonMatch = block.match(/추천 이유\s*[:：]\s*([\s\S]+)/);
+  if (aiText.includes("Groq 서버 에러") || aiText.includes("Rate limit")) {
+    const errBox = document.createElement("div");
+    errBox.style.cssText = `
+      padding: 20px; background: #fff5f7; border-radius: 12px;
+      border: 1px solid #ffd0d8; color: #ff5a75; font-size: 14px; line-height: 1.6; text-align:center;
+    `;
+    errBox.innerHTML = `🚨 <b>AI 호출 제한에 걸렸습니다!</b><br>Groq 무료 서버 제한 때문에 일시적으로 멈췄습니다.<br>안전을 위해 <b>3초 후</b> 다시 버튼을 눌러주세요.`;
+    box.appendChild(errBox);
+    return;
+  }
 
-        const menuName = menuMatch ? menuMatch[1].trim() : "메뉴";
-        const reason = reasonMatch ? reasonMatch[1].trim() : block.trim();
+  const medals = ["🥇", "🥈", "🥉"];
+  const ranks = ["1위", "2위", "3위"];
+  const colors = ["#fff9e6", "#f5f5f5", "#fff3ec"];
+  const borders = ["#ffc107", "#bbbbbb", "#ff8c42"];
 
-        const card = document.createElement("div");
-        card.style.cssText = `
-          background: ${colors[i]};
-          border: 2px solid ${borders[i]};
-          border-radius: 16px;
-          padding: 20px 24px;
-          margin-bottom: 16px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        `;
+  const blocks = aiText.split(/(?=\b[123](?:위|\.))/).filter(s => s.trim());
+  let cardCount = 0;
 
-        card.innerHTML = `
-          <div style="font-size: 12px; color: #999; margin-bottom: 6px; font-weight: 600; letter-spacing: 1px;">${medals[i]} ${ranks[i]}</div>
-          <div style="font-size: 22px; font-weight: bold; color: #222; margin-bottom: 10px;">${menuName}</div>
-          <div style="font-size: 14px; color: #666; line-height: 1.7; border-top: 1px solid ${borders[i]}; padding-top: 10px;">${reason}</div>
-        `;
-        box.appendChild(card);
-      });
-    } else {
-      const container = document.createElement("div");
-      container.style.cssText = `
-        white-space: pre-wrap; line-height: 1.7; padding: 20px;
-        background: #fff5f7; border-radius: 12px;
-        border: 1px solid #ffd0d8; color: #333; font-size: 16px;
-      `;
-      container.innerText = aiText;
-      box.appendChild(container);
+  blocks.forEach((block) => {
+    if (cardCount >= 3) return;
+
+    const rankMatch = block.match(/([123])(?:위|\.)/);
+    if (!rankMatch) return;
+
+    const rankIdx = parseInt(rankMatch[1]) - 1;
+
+    const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+    let menuName = "추천 메뉴";
+    let reason = "";
+
+    if (lines.length > 0) {
+      menuName = lines[0].replace(/^[123](?:위|\.)\s*[:：\-]?\s*/, "").trim();
+      menuName = menuName.replace(/[\[\]]/g, "");
     }
-  } else {
-    box.innerHTML = `<p style="text-align:center; color:#aaa;">추천된 결과가 없습니다. 방에서 다시 추천 버튼을 눌러주세요.</p>`;
+
+    const reasonLineIdx = lines.findIndex(l => l.includes("추천 이유") || l.includes("추천이유"));
+    if (reasonLineIdx !== -1) {
+      reason = lines.slice(reasonLineIdx).join(" ").replace(/^추천\s*이유\s*[:：\-]?\s*/, "");
+    } else if (lines.length > 1) {
+      reason = lines.slice(1).join(" ");
+    } else {
+      reason = "멤버들의 취향과 알레르기 유무를 고려하여 추천된 최적의 선택입니다.";
+    }
+
+    reason = reason.replace(/[\[\]]/g, "").trim();
+
+    const card = document.createElement("div");
+    card.style.cssText = `
+      background: ${colors[rankIdx] || "#fff"};
+      border: 2px solid ${borders[rankIdx] || "#eee"};
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      text-align: left;
+    `;
+
+    card.innerHTML = `
+      <div style="font-size: 12px; color: #999; margin-bottom: 6px; font-weight: 600; letter-spacing: 1px;">${medals[rankIdx] || "✨"} ${ranks[rankIdx] || ""}</div>
+      <div style="font-size: 22px; font-weight: bold; color: #222; margin-bottom: 10px;">${menuName}</div>
+      <div style="font-size: 14px; color: #666; line-height: 1.7; border-top: 1px solid ${borders[rankIdx] || "#eee"}; padding-top: 10px;">${reason}</div>
+    `;
+    box.appendChild(card);
+    cardCount++;
+  });
+
+  if (cardCount === 0) {
+    const container = document.createElement("div");
+    container.style.cssText = `
+      white-space: pre-wrap; line-height: 1.7; padding: 25px;
+      background: #fdfdfd; border-radius: 16px; text-align: left;
+      border: 1px solid #e0e0e0; color: #333; font-size: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    `;
+    container.innerText = aiText;
+    box.appendChild(container);
   }
 }
 
-// 로그아웃 (친구 보완 로직 반영)
+// 로그아웃
 async function logout() {
   try {
     await signOut(auth);
@@ -561,7 +583,7 @@ async function logout() {
   }
 }
 
-// 외부 HTML 버튼용 전역 객체(window) 등록 (전체 통합)
+// 외부 HTML 버튼용 전역 객체 등록
 window.go = go;
 window.googleLogin = googleLogin;
 window.logout = logout;
@@ -577,3 +599,9 @@ window.populateProfileForm = populateProfileForm;
 window.loadMyRooms = loadMyRooms;
 window.toggleRoomList = toggleRoomList;
 window.foodOptions = foodOptions;
+
+// 버튼 이벤트 직접 등록
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btnRecommend");
+  if (btn) btn.addEventListener("click", recommendMenus);
+});
